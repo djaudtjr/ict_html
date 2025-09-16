@@ -1,88 +1,498 @@
-<html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인터벌 타이머</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            min-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .settings {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .setting-group {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .setting-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-size: 0.9em;
+        }
+
+        .setting-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+
+        .setting-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .timer-display {
+            background: #2d3748;
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-display.work {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        .timer-display.rest {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .timer-display.round-rest {
+            background: linear-gradient(135deg, #3182ce, #2c5282);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            transition: width 0.1s linear;
+        }
+
+        .time-remaining {
+            font-size: 4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer-status {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .set-info {
+            font-size: 1em;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+        }
+
+        .pause-btn {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+            color: white;
+        }
+
+        .pause-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(237, 137, 54, 0.3);
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            color: white;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(229, 62, 62, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.work {
+            background: #e53e3e;
+        }
+
+        .notification.rest {
+            background: #38a169;
+        }
+
+        .notification.round-rest {
+            background: #3182ce;
+        }
+
+        .notification.complete {
+            background: #805ad5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>인터벌 타이머</h1>
+
+        <div class="settings">
+            <div class="setting-group">
+                <label for="workTime">운동 시간 (초)</label>
+                <input type="number" id="workTime" value="30" min="1" max="3600">
+            </div>
+            <div class="setting-group">
+                <label for="restTime">휴식 시간 (초)</label>
+                <input type="number" id="restTime" value="10" min="1" max="3600">
+            </div>
+            <div class="setting-group">
+                <label for="setsPerRound">세트 수 (라운드당)</label>
+                <input type="number" id="setsPerRound" value="8" min="1" max="50">
+            </div>
+            <div class="setting-group">
+                <label for="totalRounds">총 라운드 수</label>
+                <input type="number" id="totalRounds" value="3" min="1" max="20">
+            </div>
+            <div class="setting-group">
+                <label for="roundRestTime">라운드간 휴식 (초)</label>
+                <input type="number" id="roundRestTime" value="60" min="1" max="3600">
+            </div>
+        </div>
+
+        <div class="timer-display" id="timerDisplay">
+            <div class="time-remaining" id="timeRemaining">00:30</div>
+            <div class="timer-status" id="timerStatus">준비</div>
+            <div class="set-info" id="setInfo">라운드 1 / 세트 1</div>
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="controls">
+            <button class="start-btn" id="startBtn">시작</button>
+            <button class="pause-btn" id="pauseBtn" style="display: none;">일시정지</button>
+            <button class="reset-btn" id="resetBtn">리셋</button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
     <script>
-        function changeTitle() {
-            const title = document.getElementById('abc');
-            if (title.textContent === '내용 부분1') {
-                title.textContent = '변경된 제목!';
-                title.style.color = '#ff6b6b';
-            } else {
-                title.textContent = '내용 부분1';
-                title.style.color = '#333';
+        class IntervalTimer {
+            constructor() {
+                this.workTime = 30;
+                this.restTime = 10;
+                this.setsPerRound = 8;
+                this.totalRounds = 3;
+                this.roundRestTime = 60;
+
+                this.currentRound = 1;
+                this.currentSet = 1;
+                this.timeRemaining = this.workTime;
+                this.isRunning = false;
+                this.isPaused = false;
+                this.currentPhase = 'ready'; // 'work', 'rest', 'round-rest', 'complete', 'ready'
+                this.timer = null;
+
+                this.bindEvents();
+                this.updateDisplay();
+                this.loadSettings();
             }
-        }
 
-        function toggleImage() {
-            const img = document.querySelector('img');
-            if (img.style.display === 'none') {
-                img.style.display = 'block';
-            } else {
-                img.style.display = 'none';
-            }
-        }
+            bindEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.start());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
 
-        function addTodo() {
-            const todoCount = document.querySelectorAll('ul li').length;
-            const ul = document.querySelector('ul');
-            const newLi = document.createElement('li');
-            newLi.textContent = `TODO ${todoCount + 1}`;
-            ul.appendChild(newLi);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('페이지가 로드되었습니다!');
-
-            const links = document.querySelectorAll('.atag_list a');
-            links.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    console.log(`${this.textContent} 링크를 클릭했습니다.`);
+                // 설정값 변경 이벤트
+                ['workTime', 'restTime', 'setsPerRound', 'totalRounds', 'roundRestTime'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => this.loadSettings());
                 });
-            });
+            }
+
+            loadSettings() {
+                if (!this.isRunning) {
+                    this.workTime = parseInt(document.getElementById('workTime').value);
+                    this.restTime = parseInt(document.getElementById('restTime').value);
+                    this.setsPerRound = parseInt(document.getElementById('setsPerRound').value);
+                    this.totalRounds = parseInt(document.getElementById('totalRounds').value);
+                    this.roundRestTime = parseInt(document.getElementById('roundRestTime').value);
+
+                    if (this.currentPhase === 'ready') {
+                        this.timeRemaining = this.workTime;
+                        this.updateDisplay();
+                    }
+                }
+            }
+
+            start() {
+                if (this.currentPhase === 'complete') {
+                    this.reset();
+                    return;
+                }
+
+                if (this.isPaused) {
+                    this.isPaused = false;
+                } else if (this.currentPhase === 'ready') {
+                    this.currentPhase = 'work';
+                    this.timeRemaining = this.workTime;
+                }
+
+                this.isRunning = true;
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('pauseBtn').style.display = 'inline-block';
+
+                this.timer = setInterval(() => this.tick(), 1000);
+                this.updateDisplay();
+            }
+
+            pause() {
+                this.isRunning = false;
+                this.isPaused = true;
+                clearInterval(this.timer);
+
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').style.display = 'none';
+                document.getElementById('startBtn').textContent = '계속';
+            }
+
+            reset() {
+                this.isRunning = false;
+                this.isPaused = false;
+                clearInterval(this.timer);
+
+                this.currentRound = 1;
+                this.currentSet = 1;
+                this.currentPhase = 'ready';
+                this.timeRemaining = this.workTime;
+
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').style.display = 'none';
+                document.getElementById('startBtn').textContent = '시작';
+
+                this.updateDisplay();
+                this.hideNotification();
+            }
+
+            tick() {
+                this.timeRemaining--;
+
+                if (this.timeRemaining <= 0) {
+                    this.handlePhaseComplete();
+                }
+
+                this.updateDisplay();
+            }
+
+            handlePhaseComplete() {
+                switch (this.currentPhase) {
+                    case 'work':
+                        if (this.currentSet < this.setsPerRound) {
+                            this.currentPhase = 'rest';
+                            this.timeRemaining = this.restTime;
+                            this.showNotification('휴식 시간!', 'rest');
+                        } else if (this.currentRound < this.totalRounds) {
+                            this.currentPhase = 'round-rest';
+                            this.timeRemaining = this.roundRestTime;
+                            this.showNotification('라운드 완료! 긴 휴식', 'round-rest');
+                        } else {
+                            this.completeWorkout();
+                            return;
+                        }
+                        break;
+
+                    case 'rest':
+                        this.currentSet++;
+                        this.currentPhase = 'work';
+                        this.timeRemaining = this.workTime;
+                        this.showNotification(`세트 ${this.currentSet} 시작!`, 'work');
+                        break;
+
+                    case 'round-rest':
+                        this.currentRound++;
+                        this.currentSet = 1;
+                        this.currentPhase = 'work';
+                        this.timeRemaining = this.workTime;
+                        this.showNotification(`라운드 ${this.currentRound} 시작!`, 'work');
+                        break;
+                }
+            }
+
+            completeWorkout() {
+                this.currentPhase = 'complete';
+                this.isRunning = false;
+                clearInterval(this.timer);
+
+                document.getElementById('startBtn').style.display = 'inline-block';
+                document.getElementById('pauseBtn').style.display = 'none';
+                document.getElementById('startBtn').textContent = '다시 시작';
+
+                this.showNotification('운동 완료! 수고하셨습니다!', 'complete');
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                document.getElementById('timeRemaining').textContent = timeString;
+
+                let statusText = '';
+                let totalTime = 0;
+
+                switch (this.currentPhase) {
+                    case 'ready':
+                        statusText = '준비';
+                        totalTime = this.workTime;
+                        break;
+                    case 'work':
+                        statusText = '운동';
+                        totalTime = this.workTime;
+                        break;
+                    case 'rest':
+                        statusText = '휴식';
+                        totalTime = this.restTime;
+                        break;
+                    case 'round-rest':
+                        statusText = '라운드간 휴식';
+                        totalTime = this.roundRestTime;
+                        break;
+                    case 'complete':
+                        statusText = '완료!';
+                        totalTime = 1;
+                        break;
+                }
+
+                document.getElementById('timerStatus').textContent = statusText;
+                document.getElementById('setInfo').textContent =
+                    this.currentPhase === 'complete' ?
+                    '모든 운동 완료!' :
+                    `라운드 ${this.currentRound}/${this.totalRounds} / 세트 ${this.currentSet}/${this.setsPerRound}`;
+
+                // 타이머 표시 색상 변경
+                const display = document.getElementById('timerDisplay');
+                display.className = `timer-display ${this.currentPhase}`;
+
+                // 진행률 바 업데이트
+                const progress = ((totalTime - this.timeRemaining) / totalTime) * 100;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+            }
+
+            showNotification(message, type) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
+
+                setTimeout(() => {
+                    this.hideNotification();
+                }, 3000);
+
+                // 간단한 비프음 효과
+                this.playNotificationSound();
+            }
+
+            hideNotification() {
+                const notification = document.getElementById('notification');
+                notification.classList.remove('show');
+            }
+
+            playNotificationSound() {
+                // 웹 오디오 API를 사용한 간단한 비프음
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } catch (e) {
+                    // 오디오 컨텍스트를 지원하지 않는 브라우저에서는 무시
+                }
+            }
+        }
+
+        // 타이머 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            new IntervalTimer();
         });
     </script>
-    <head>
-        <title>나의 첫 페이지</title>
-        <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-        <h1 id="abc">내용 부분1</h1>
-        <p> 상세 내용 </p>
-        <div class="atag_list">
-            <a href="https://www.w3schools.com/">w3 school</a>
-            <a href="https://www.w3schools.com/" target="_blank">w3 school-새탭에서</a>
-            <a href="https://www.google.com">구글</a>
-            <a href="https://www.google.com" target="_blank">구글-새탭에서</a><br>
-        </div>
-
-        <img src="https://images.unsplash.com/photo-1757877942839-e3ed20a6c8c4?q=80&w=765&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" width="400" height="400">
-        <div class="atag_list">
-            <a href="https://www.w3schools.com/">w3 school</a>
-            <a href="https://www.w3schools.com/" target="_blank">w3 school-새탭에서</a>
-        </div>
-
-        <!-- <img src="eys.png" alt="설명"> -->
-
-        <div class="content1">
-            <ol>
-                <li>TODO 1</li>
-                <li>TODO 2</li>
-                <li>TODO 3</li>
-            </ol>
-        </div>
-        <div class="content1">
-            <ul>
-                <li>TODO 1</li>
-                <li>TODO 2</li>
-                <li>TODO 3</li>
-            </ul>
-        </div>
-
-        <div class="content3">
-            <h1 class="h1_t2">내용부분2</h2>
-            <p> 상세 내용 </p>
-        </div>
-
-        <button onclick="changeTitle()">제목 변경</button>
-        <button onclick="toggleImage()">이미지 숨기기/보이기</button>
-        <button onclick="addTodo()">할일 추가</button>
-    </body>
+</body>
 </html>
